@@ -1,8 +1,7 @@
 package main
 
 import (
-	"math"
-	"sync/atomic"
+	"sync"
 )
 
 type GamePosition interface {
@@ -13,72 +12,51 @@ type GamePosition interface {
 	render()
 }
 
-type counter struct {
+type Counter struct {
+	mu    sync.Mutex
 	count int32
 }
 
-// Increment the counter
-func (c *counter) inc() {
-	atomic.AddInt32(&c.count, 1)
+// Increment the Counter
+func (c *Counter) inc() {
+	c.mu.Lock()
+	c.count++
+	c.mu.Unlock()
 }
 
-func (c *counter) get() int {
-	return int(atomic.LoadInt32(&c.count))
+func (c *Counter) get() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return int(c.count)
 }
 
-func negamax(board Board) (int, int) {
+func negamax(board Board, counter *Counter) int {
+	counter.inc()
+	var i = 0
 	// Drawn game
-	positionsCount := 0
-	if board.isTerminal() && board.wonBy() == 0 {
-		return 0, positionsCount
+	if board.movesPlayed == Height*Width {
+		return 0
 	}
 
-	for _, move := range board.possibleMoves(centerHeuristic) {
-		positionsCount++
-		if board.isWinningMove(move) {
-			return (Width*Height + 1 - board.stonesPlaced()) / 2, positionsCount
+	for ; i < Width; i++ {
+		if board.canPlay(i) && board.isWinningMove(i) {
+			return (Width*Height + 1 - board.movesPlayed) / 2
 		}
 	}
 
 	var bestScore = -Width * Height
-	for _, move := range board.possibleMoves(centerHeuristic) {
-		nextBoard := playMove(board, move)
-		score, otherCount := negamax(nextBoard)
-		score = -score
-		positionsCount += otherCount
-		if score > bestScore {
-			bestScore = score
-		}
-	}
-	return bestScore, positionsCount
-}
-
-func minimax(board Board, depth int, maximizingPlayer bool, positionCounter *counter) int {
-	positionCounter.inc()
-
-	if depth == 0 || board.isTerminal() {
-		return board.positionScore()
-	}
-	if maximizingPlayer {
-		maxEval := math.MinInt32 // -infinity
-		for _, nextBoard := range board.childPositions() {
-			eval := minimax(nextBoard, depth-1, false, positionCounter)
-			// maxEval = max(maxEval, eval)
-			if eval > maxEval {
-				maxEval = eval
+	var moves = [7]int{3, 2, 4, 1, 5, 0, 6}
+	i = 0
+	for ; i < 7; i++ {
+		move := moves[i]
+		if board.canPlay(move) {
+			nextBoard := board
+			nextBoard.playMove(move)
+			score := -negamax(nextBoard, counter)
+			if score > bestScore {
+				bestScore = score
 			}
 		}
-		return maxEval
-
-	} else {
-		minEval := math.MaxInt32 // +infinity
-		for _, child := range board.childPositions() {
-			eval := minimax(child, depth-1, true, positionCounter)
-			// minEval = min(minEval, eval)
-			if eval < minEval {
-				minEval = eval
-			}
-		}
-		return minEval
 	}
+	return bestScore
 }
