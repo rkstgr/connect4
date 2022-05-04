@@ -6,11 +6,14 @@ import (
 
 type Player uint8
 
+//goland:noinspection GoUnusedConst
 const (
-	Player1 Player = 1
-	Player2 Player = 2
-	Height  int    = 6
-	Width   int    = 7
+	Player1  Player = 1
+	Player2  Player = 2
+	Height   int    = 6
+	Width    int    = 7
+	MaxScore int    = Height*Width/2 - 3
+	MinScore int    = -Height*Width/2 + 3
 )
 
 type Column [Height]Player
@@ -307,10 +310,26 @@ func createBoard(position string) Board {
 	return board
 }
 
+func (board *Board) hash() [Height * Width]byte {
+	// every stone needs 2 bit
+	// we have 7*6*2 = 84 bits
+	// pad with 0, and we get 88 bits or 11 bytes
+
+	hashString := [Height * Width]byte{}
+	for i := 0; i < Width; i++ {
+		for j := 0; j < Height; j++ {
+			hashString[i*Height+j] = byte(board.columns[i][j])
+		}
+	}
+	return hashString
+}
+
 func main() {
 	//var board = Board{[7]Column{}, 0}
 	board := createBoard("67635256351344534443614126713657127")
 	fmt.Println(board.position)
+	// Print board hash as hex
+	fmt.Printf("%x\n", board.hash())
 	fmt.Println("Current Player:", board.currentPlayer())
 	fmt.Println(board.positionScore())
 	board.render()
