@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -35,7 +36,12 @@ func loadTestData(file string) []TestBoardPosition {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fileHandle.Close()
+	defer func(fileHandle *os.File) {
+		err := fileHandle.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(fileHandle)
 	scanner := bufio.NewScanner(fileHandle)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -56,7 +62,7 @@ func evaluateTestData(testData []TestBoardPosition, t *testing.T) {
 		evaluated := make(chan bool)
 		go func() {
 			select {
-			case <-time.After(3 * time.Second):
+			case <-time.After(20 * time.Second):
 				t.Errorf("Test timed out")
 				os.Exit(1)
 			case <-evaluated:
@@ -65,14 +71,9 @@ func evaluateTestData(testData []TestBoardPosition, t *testing.T) {
 		}()
 
 		startTime := time.Now()
-		evaluation := negamax(position, &positionsCount)
+		evaluation := negamax(position, -math.MaxInt32, math.MaxInt32, &positionsCount)
 		elapsedTime := time.Since(startTime)
 		evaluated <- true
-
-		// If one evaluation takes more than 20 seconds, fail the test.
-		if elapsedTime > time.Second*4 {
-			t.Errorf("Test %d took %s", i, elapsedTime)
-		}
 
 		elapsedTimes[i] = elapsedTime
 		count := positionsCount.get()

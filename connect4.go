@@ -212,6 +212,7 @@ func (board Board) render() {
 
 // Take turn manually, panics if board is full
 // Render the board and ask the user for a column
+//goland:noinspection GoUnusedFunction
 func makeManualMoves(board Board) Board {
 	if board.isFull() {
 		board.render()
@@ -225,7 +226,10 @@ func makeManualMoves(board Board) Board {
 		fmt.Println()
 		fmt.Print("Enter move: ")
 		for {
-			fmt.Scanf("%d", &move)
+			move, err := fmt.Scanf("%d", move)
+			if err != nil {
+				continue
+			}
 			if move == -1 {
 				return board
 			}
@@ -239,7 +243,7 @@ func makeManualMoves(board Board) Board {
 				break
 			}
 		}
-		// board = playMove(board, move)
+		board.playMove(move)
 	}
 	return board
 }
@@ -279,20 +283,7 @@ func (board Board) getPosition() string {
 
 func (board Board) evaluate() int {
 	positionsVisited := Counter{}
-	return negamax(board, &positionsVisited)
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
-// returns the heuristic value of the board
-// the value is highest in the center and decreases linearly to the edges
-func centerHeuristic(_ *Board, move int) int {
-	return 3 - abs(move-3)
+	return negamax(board, -1000, 1000, &positionsVisited)
 }
 
 func (board Board) childPositions() []Board {
@@ -324,7 +315,7 @@ func main() {
 	fmt.Println(board.positionScore())
 	board.render()
 	counter := Counter{}
-	eval := negamax(board, &counter)
+	eval := negamax(board, -1000, 1000, &counter)
 
 	fmt.Println("Evaluation:", eval)
 	fmt.Println("Positions visited:", counter.count)
