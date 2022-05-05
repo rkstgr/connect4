@@ -32,18 +32,18 @@ func (c *Counter) get() int {
 
 // Implement transposition table
 type TranspositionTable struct {
-	table map[[Height * Width]byte]int
+	table map[uint64]int
 	size  int
 }
 
 func NewTranspositionTable(size int) *TranspositionTable {
 	return &TranspositionTable{
-		table: make(map[[Height * Width]byte]int),
+		table: make(map[uint64]int),
 		size:  size,
 	}
 }
 
-func (t *TranspositionTable) get(key [Height * Width]byte) int {
+func (t *TranspositionTable) get(key uint64) int {
 	// check if key exists is not return 0
 	if value, ok := t.table[key]; ok {
 		return value
@@ -52,7 +52,7 @@ func (t *TranspositionTable) get(key [Height * Width]byte) int {
 	}
 }
 
-func (t *TranspositionTable) set(key [Height * Width]byte, value int) {
+func (t *TranspositionTable) set(key uint64, value int) {
 	t.table[key] = value
 }
 

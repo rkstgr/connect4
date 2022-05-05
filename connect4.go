@@ -201,11 +201,11 @@ func (board Board) render() {
 		for _, column := range board.columns {
 			position := column[j]
 			if position == 0 {
-				print("🔘")
+				print(".")
 			} else if position == Player1 {
-				print("🟢")
+				print("1")
 			} else if position == Player2 {
-				print("🔴")
+				print("2")
 			}
 			print(" ")
 		}
@@ -310,18 +310,46 @@ func createBoard(position string) Board {
 	return board
 }
 
-func (board *Board) hash() [Height * Width]byte {
+func (board Board) key(column int) uint8 {
+	var key uint8
+	columnHeight := board.heights[column]
+	if columnHeight == 0 {
+		return 0
+	}
+	key = 1<<(columnHeight) - 1
+	for i := columnHeight - 1; i >= 0; i-- {
+		if board.columns[column][i] == Player2 {
+			key += 1 << (columnHeight - i - 1)
+		}
+	}
+	return key
+}
+
+func (board *Board) hash() uint64 {
 	// every stone needs 2 bit
 	// we have 7*6*2 = 84 bits
 	// pad with 0, and we get 88 bits or 11 bytes
-
-	hashString := [Height * Width]byte{}
+	columnKeys := [Width]uint8{}
 	for i := 0; i < Width; i++ {
-		for j := 0; j < Height; j++ {
-			hashString[i*Height+j] = byte(board.columns[i][j])
+		columnKeys[i] = board.key(i)
+	}
+	var leftFirst bool = false
+	if columnKeys[0]+columnKeys[1]+columnKeys[2] > columnKeys[4]+columnKeys[5]+columnKeys[6] {
+		leftFirst = true
+	}
+	var key uint64
+	if leftFirst {
+		for i := 0; i < Width; i++ {
+			key = key << 8
+			key += uint64(columnKeys[i])
+		}
+	} else {
+		for i := Width - 1; i >= 0; i-- {
+			key = key << 8
+			key += uint64(columnKeys[i])
 		}
 	}
-	return hashString
+	return key
 }
 
 func main() {
@@ -333,6 +361,8 @@ func main() {
 	fmt.Println("Current Player:", board.currentPlayer())
 	fmt.Println(board.positionScore())
 	board.render()
+	fmt.Println("Column 1 key:", board.key(2))
+	fmt.Println("Board hash:", board.hash())
 	counter := Counter{}
 	eval := negamax(board, -1000, 1000, &counter)
 

@@ -6,5 +6,5 @@
 - [x] Test win conditions
 - [x] Check for draw conditions
 - [x] Implement minimax solver
-- [x] Optimize engine & solver speed (> 10M positions / second)
-- [ ] Implement alpha-beta pruning
+- [x] Optimize engine & solver speed
+- [x] Implement alpha-beta pruning
