@@ -32,18 +32,16 @@ func (c *Counter) get() int {
 
 // TranspositionTable Caches values of game positions
 type TranspositionTable struct {
-	table map[uint64]int
-	size  int
+	table map[uint64]int8
 }
 
-func NewTranspositionTable(size int) *TranspositionTable {
+func NewTranspositionTable() *TranspositionTable {
 	return &TranspositionTable{
-		table: make(map[uint64]int),
-		size:  size,
+		table: make(map[uint64]int8),
 	}
 }
 
-func (t *TranspositionTable) get(key uint64) int {
+func (t *TranspositionTable) get(key uint64) int8 {
 	// check if columnKey exists is not return 0
 	if value, ok := t.table[key]; ok {
 		return value
@@ -52,11 +50,11 @@ func (t *TranspositionTable) get(key uint64) int {
 	}
 }
 
-func (t *TranspositionTable) set(key uint64, value int) {
+func (t *TranspositionTable) set(key uint64, value int8) {
 	t.table[key] = value
 }
 
-var transpositionTable = NewTranspositionTable(1000000)
+var transpositionTable = NewTranspositionTable()
 
 func negamax(board Board, alpha, beta int, counter *Counter) int {
 	counter.inc()
@@ -79,7 +77,7 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 	// Which is the score from above + 1
 	max := (Width*Height - 1 - board.movesPlayed) / 2 // upper bound of our score as we cannot win immediately
 	if val := transpositionTable.get(board.key()); val != 0 {
-		max = val + MinScore - 1
+		max = int(val) + MinScore - 1
 	}
 	if beta > max {
 		beta = max // there is no need to keep beta above our max possible score.
@@ -108,7 +106,7 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 			}
 		}
 	}
-	transpositionTable.set(board.key(), alpha-MinScore+1)
+	transpositionTable.set(board.key(), int8(alpha-MinScore+1))
 	return alpha
 }
 
