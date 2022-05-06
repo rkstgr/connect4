@@ -96,7 +96,7 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 		move := moves[i]
 		if board.canPlay(move) {
 			nextBoard := board
-			nextBoard.playMove(move)
+			nextBoard.play(move)
 			score := -negamax(nextBoard, -beta, -alpha, counter)
 			if score >= beta {
 				// There is better path for the opponent; Prune

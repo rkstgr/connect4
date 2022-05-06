@@ -10,4 +10,5 @@
 - [x] Implement alpha-beta pruning
 - [x] Implement transposition table
 - [x] Implement iterative deepening with null window search
+- [ ] Implement board with bit mapping
 - [ ] Implement better move ordering

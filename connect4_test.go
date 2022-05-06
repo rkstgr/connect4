@@ -54,7 +54,7 @@ func evaluateTestData(testData []TestBoardPosition, maxEvalTime time.Duration, t
 	positionCounters := make([]int, len(testData))
 	elapsedTimes := make([]time.Duration, len(testData))
 	for i, testPosition := range testData {
-		position := createBoard(testPosition.positionString)
+		position := newBoard(testPosition.positionString)
 		positionsCount := Counter{}
 		// start a goroutine that with a timer of maxEvalTime
 		// if the evaluation is not finished in time, the test fails
@@ -75,14 +75,15 @@ func evaluateTestData(testData []TestBoardPosition, maxEvalTime time.Duration, t
 		evaluated <- true
 
 		elapsedTimes[i] = elapsedTime
-		count := positionsCount.get()
-		positionCounters[i] = count
+		positionCounters[i] = positionsCount.get()
 		if evaluation != testPosition.evaluation {
-			t.Errorf("❌ Evaluation of %s is %d, but should be %d",
-				testPosition.positionString, evaluation, testPosition.evaluation)
+			t.Errorf("%d / %d: ❌ Evaluation of %s is %d, but should be %d",
+				i, len(testData), testPosition.positionString, evaluation, testPosition.evaluation)
+		} else {
+			//t.Logf("%d / %d: ✅ Evaluation of %s is %d (Time: %s, Positions: %d)",
+			//	i, len(testData), testPosition.positionString, evaluation, elapsedTime, positionCounters[i])
 		}
 	}
-	// Print average positions count
 	var totalPositions int
 	for _, count := range positionCounters {
 		totalPositions += count
@@ -95,10 +96,11 @@ func evaluateTestData(testData []TestBoardPosition, maxEvalTime time.Duration, t
 	if len(elapsedTimes) > 0 {
 		averageTime = totalTime / time.Duration(len(elapsedTimes))
 	}
-	average := float64(totalPositions) / float64(len(positionCounters))
+	averagePositionsCount := float64(totalPositions) / float64(len(positionCounters))
+	kiloPositionsPerSecond := float64(totalPositions) / 1000 / totalTime.Seconds()
 	t.Logf("Mean elapsed time: %s", averageTime)
-	t.Logf("Average positions count: %.2f", average)
-	t.Logf("K Pos. per second: %.2f", float64(totalPositions)/1000/totalTime.Seconds())
+	t.Logf("Average positions count: %.2f", averagePositionsCount)
+	t.Logf("K Pos. per second: %.2f", kiloPositionsPerSecond)
 }
 
 // Create a test for every test file:
