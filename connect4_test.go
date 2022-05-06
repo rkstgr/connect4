@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -51,18 +50,18 @@ func loadTestData(file string) []TestBoardPosition {
 	return testData
 }
 
-func evaluateTestData(testData []TestBoardPosition, t *testing.T) {
+func evaluateTestData(testData []TestBoardPosition, maxEvalTime time.Duration, t *testing.T) {
 	positionCounters := make([]int, len(testData))
 	elapsedTimes := make([]time.Duration, len(testData))
 	for i, testPosition := range testData {
 		position := createBoard(testPosition.positionString)
 		positionsCount := Counter{}
-		// start a goroutine that with a timer of 10 seconds
-		// if the evaluation is not finished, then the test fails
+		// start a goroutine that with a timer of maxEvalTime
+		// if the evaluation is not finished in time, the test fails
 		evaluated := make(chan bool)
 		go func() {
 			select {
-			case <-time.After(20 * time.Second):
+			case <-time.After(maxEvalTime):
 				t.Errorf("Test timed out")
 				os.Exit(1)
 			case <-evaluated:
@@ -71,7 +70,7 @@ func evaluateTestData(testData []TestBoardPosition, t *testing.T) {
 		}()
 
 		startTime := time.Now()
-		evaluation := negamax(position, -math.MaxInt32, math.MaxInt32, &positionsCount)
+		evaluation := solve(position, &positionsCount)
 		elapsedTime := time.Since(startTime)
 		evaluated <- true
 
@@ -112,30 +111,30 @@ func evaluateTestData(testData []TestBoardPosition, t *testing.T) {
 
 func TestEndEasy(t *testing.T) {
 	testDataEndEasy := loadTestData("test_data/End-Easy.txt")
-	evaluateTestData(testDataEndEasy, t)
+	evaluateTestData(testDataEndEasy, time.Second, t)
 }
 
 func TestMiddleEasy(t *testing.T) {
 	testData := loadTestData("test_data/Middle-Easy.txt")
-	evaluateTestData(testData, t)
+	evaluateTestData(testData, 30*time.Second, t)
 }
 
 func TestMiddleMedium(t *testing.T) {
 	testData := loadTestData("test_data/Middle-Medium.txt")
-	evaluateTestData(testData, t)
+	evaluateTestData(testData, time.Minute, t)
 }
 
 func TestStartEasy(t *testing.T) {
 	testData := loadTestData("test_data/Start-Easy.txt")
-	evaluateTestData(testData, t)
+	evaluateTestData(testData, time.Minute, t)
 }
 
 func TestStartMedium(t *testing.T) {
 	testData := loadTestData("test_data/Start-Medium.txt")
-	evaluateTestData(testData, t)
+	evaluateTestData(testData, time.Minute, t)
 }
 
 func TestStartHard(t *testing.T) {
 	testData := loadTestData("test_data/Start-Hard.txt")
-	evaluateTestData(testData, t)
+	evaluateTestData(testData, time.Minute, t)
 }

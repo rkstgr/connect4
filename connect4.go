@@ -25,6 +25,14 @@ type Board struct {
 	movesPlayed int
 }
 
+func (board *Board) minScore() int {
+	return -(Width*Height - board.movesPlayed) / 2
+}
+
+func (board *Board) maxScore() int {
+	return (Width*Height + 1 - board.movesPlayed) / 2
+}
+
 // BOARD
 
 func (board Board) canPlay(move int) bool {

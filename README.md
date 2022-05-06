@@ -9,4 +9,5 @@
 - [x] Optimize engine & solver speed
 - [x] Implement alpha-beta pruning
 - [x] Implement transposition table
+- [x] Implement iterative deepening with null window search
 - [ ] Implement better move ordering

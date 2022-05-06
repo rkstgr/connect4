@@ -12,12 +12,12 @@ type GamePosition interface {
 	render()
 }
 
+// Counter counting visited positions
 type Counter struct {
 	mu    sync.Mutex
 	count int32
 }
 
-// Increment the Counter
 func (c *Counter) inc() {
 	c.mu.Lock()
 	c.count++
@@ -110,4 +110,24 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 	}
 	transpositionTable.set(board.key(), alpha-MinScore+1)
 	return alpha
+}
+
+func solve(board Board, counter *Counter) int {
+	min := board.minScore()
+	max := board.maxScore()
+	for min < max {
+		middle := min + (max-min)/2
+		if middle <= 0 && min/2 < middle {
+			middle = min / 2
+		} else if middle >= 0 && middle < max/2 {
+			middle = max / 2
+		}
+		r := negamax(board, middle, middle+1, counter)
+		if r <= middle {
+			max = r
+		} else {
+			min = r
+		}
+	}
+	return min
 }
