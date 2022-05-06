@@ -25,35 +25,10 @@ type Board struct {
 	movesPlayed int
 }
 
-// COLUMN
-
-// Place a stone at the end of the given column
-func (c *Column) placeStone(player Player) {
-	for i := 0; i < len(c); i++ {
-		if c[i] == 0 {
-			c[i] = player
-			return
-		}
-	}
-}
-
-// Check if the given column is full
-// check if the last element is not 0
-func (c *Column) isFull() bool {
-	return c[len(c)-1] != 0
-}
-
 // BOARD
 
-// check if the move is possible
 func (board Board) canPlay(move int) bool {
 	return move >= 0 && move < len(board.columns) && board.heights[move] < Height
-}
-
-func (board *Board) makeMove(move int, player Player) {
-	board.columns[move].placeStone(player)
-	board.heights[move]++
-	board.movesPlayed++
 }
 
 func (board *Board) undoMove(move int) {
@@ -103,51 +78,21 @@ func (board *Board) playMove(move int) {
 	if move < 0 || move >= len(board.columns) {
 		panic("Invalid move")
 	}
-	if board.columns[move].isFull() {
-		// print the board, current turn and move
-		board.render()
+	// check if column is full
+	currentHeight := board.heights[move]
+	if currentHeight >= Height {
 		s := fmt.Sprintf("Column %d is full", move)
 		panic(s)
 	}
 	if board.movesPlayed%2 == 0 {
-		board.columns[move].placeStone(Player1)
+		board.columns[move][currentHeight] = Player1
 	} else {
-		board.columns[move].placeStone(Player2)
-		// board.position += fmt.Sprintf("%d", move+1)
+		board.columns[move][currentHeight] = Player2
 	}
 	board.heights[move]++
 	board.movesPlayed++
 }
 
-// Returns all available columns
-// If a heuristic is given it will return the moves sorted by their heuristic value
-func (board *Board) possibleMoves() []int {
-	var moves [7]int
-	movesFound := 0
-	moveOrder := []int{3, 2, 4, 1, 5, 0, 6} // move heuristic: center best, corners worst
-	for _, move := range moveOrder {
-		if !board.columns[move].isFull() {
-			moves[movesFound] = move
-			movesFound++
-		}
-	}
-	return moves[:movesFound]
-}
-
-func (board *Board) stonesPlacedBy(player Player) int {
-	// sum the number of stones in each column
-	var sum int
-	for _, column := range board.columns {
-		for _, stone := range column {
-			if stone == player {
-				sum++
-			}
-		}
-	}
-	return sum
-}
-
-// Returns the player who has to make the next move
 func (board *Board) currentPlayer() Player {
 	if board.movesPlayed%2 == 0 {
 		return Player1
@@ -155,11 +100,9 @@ func (board *Board) currentPlayer() Player {
 	return Player2
 }
 
-// Returns true if there is no move possible
-// Because all columns are full
 func (board *Board) isFull() bool {
-	for _, column := range board.columns {
-		if !column.isFull() {
+	for _, height := range board.heights {
+		if height < Height {
 			return false
 		}
 	}
@@ -201,11 +144,11 @@ func (board Board) render() {
 		for _, column := range board.columns {
 			position := column[j]
 			if position == 0 {
-				print(".")
+				print("🔘")
 			} else if position == Player1 {
-				print("1")
+				print("🟢")
 			} else if position == Player2 {
-				print("2")
+				print("🔴")
 			}
 			print(" ")
 		}
@@ -216,101 +159,45 @@ func (board Board) render() {
 // Take turn manually, panics if board is full
 // Render the board and ask the user for a column
 //goland:noinspection GoUnusedFunction
-func makeManualMoves(board Board) Board {
+func (board Board) makeManualMove() {
+	// Check if a move is possible
 	if board.isFull() {
-		board.render()
-		panic("Board is full")
+		fmt.Println("The board is full")
+		return
 	}
+
+	board.render()
+	fmt.Println("Please enter a valid move: ")
 	var move int
-	// check that the user entered a valid move, ask again if not
-	for !board.isTerminal() {
-		board.render()
-		fmt.Println("Available columns:", board.possibleMoves())
-		fmt.Println()
-		fmt.Print("Enter move: ")
-		for {
-			move, err := fmt.Scanf("%d", move)
-			if err != nil {
-				continue
-			}
-			if move == -1 {
-				return board
-			}
-			if move < 0 || int(move) >= len(board.columns) {
-				fmt.Println("Invalid move")
-				fmt.Print("Enter move: ")
-			} else if board.columns[move].isFull() {
-				fmt.Println("Column is full")
-				fmt.Print("Enter move: ")
-			} else {
-				break
-			}
-		}
+	_, err := fmt.Scanf("%d", &move)
+	if err != nil {
+		fmt.Println("Error parsing the entered move")
+		return
+	}
+	if board.canPlay(move) {
 		board.playMove(move)
-	}
-	return board
-}
-
-// GAME
-
-func (board Board) isTerminal() bool {
-	return board.isFull() || board.wonBy() != 0
-}
-
-// Score of the current position relative to the current player
-// A positive score means the current player has a winning position (won the game)
-// A negative score means the current player has a losing position (lost the game)
-// A score of 0 means the every move will lead to a draw
-func (board Board) positionScore() int {
-	if board.isTerminal() {
-		winningPlayer := board.wonBy()
-
-		// Player 1 has a winning position
-		if winningPlayer == Player1 {
-			return 22 - board.stonesPlacedBy(Player1)
-		} else if winningPlayer == Player2 {
-			// Current player has a losing position
-			return -22 + board.stonesPlacedBy(Player2)
-		} else {
-			return 0
-		}
 	} else {
-		// The current position is not terminal
-		return 0
+		fmt.Println("Invalid move")
 	}
 }
 
-func (board Board) getPosition() string {
-	return ""
-}
-
-func (board Board) evaluate() int {
+func (board Board) negamaxScore() int {
 	positionsVisited := Counter{}
 	return negamax(board, -1000, 1000, &positionsVisited)
 }
 
-func (board Board) childPositions() []Board {
-	var children []Board
-	for _, move := range board.possibleMoves() {
-		child := board
-		child.playMove(move)
-		children = append(children, child)
-	}
-	return children
-}
-
 // movesString is a string of integers representing the moves read from left to right
 // e.g "1234" means the first move is column 1, the second move is column 2, etc.
-func createBoard(position string) Board {
+func createBoard(positionString string) Board {
 	var board Board
-	for i := 0; i < len(position); i++ {
-		move := int((position[i] - '0') - 1)
+	for i := 0; i < len(positionString); i++ {
+		move := int((positionString[i] - '0') - 1)
 		board.playMove(move)
 	}
 	return board
 }
 
-func (board Board) key(column int) uint8 {
+func (board Board) columnKey(column int) uint8 {
 	var key uint8
 	columnHeight := board.heights[column]
 	if columnHeight == 0 {
@@ -325,15 +212,14 @@ func (board Board) key(column int) uint8 {
 	return key
 }
 
-func (board *Board) hash() uint64 {
-	// every stone needs 2 bit
-	// we have 7*6*2 = 84 bits
-	// pad with 0, and we get 88 bits or 11 bytes
+// Get the key for the current position
+// Symmetric positions are treated as equal
+func (board *Board) key() uint64 {
 	columnKeys := [Width]uint8{}
 	for i := 0; i < Width; i++ {
-		columnKeys[i] = board.key(i)
+		columnKeys[i] = board.columnKey(i)
 	}
-	var leftFirst bool = false
+	var leftFirst = false
 	if columnKeys[0]+columnKeys[1]+columnKeys[2] > columnKeys[4]+columnKeys[5]+columnKeys[6] {
 		leftFirst = true
 	}
@@ -354,15 +240,10 @@ func (board *Board) hash() uint64 {
 
 func main() {
 	//var board = Board{[7]Column{}, 0}
-	board := createBoard("67635256351344534443614126713657127")
-	fmt.Println(board.position)
-	// Print board hash as hex
-	fmt.Printf("%x\n", board.hash())
+	board := createBoard("34225")
 	fmt.Println("Current Player:", board.currentPlayer())
-	fmt.Println(board.positionScore())
 	board.render()
-	fmt.Println("Column 1 key:", board.key(2))
-	fmt.Println("Board hash:", board.hash())
+
 	counter := Counter{}
 	eval := negamax(board, -1000, 1000, &counter)
 

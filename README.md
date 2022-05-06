@@ -8,3 +8,5 @@
 - [x] Implement minimax solver
 - [x] Optimize engine & solver speed
 - [x] Implement alpha-beta pruning
+- [x] Implement transposition table
+- [ ] Implement better move ordering

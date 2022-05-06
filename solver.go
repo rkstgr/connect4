@@ -30,7 +30,7 @@ func (c *Counter) get() int {
 	return int(c.count)
 }
 
-// Implement transposition table
+// TranspositionTable Caches values of game positions
 type TranspositionTable struct {
 	table map[uint64]int
 	size  int
@@ -44,7 +44,7 @@ func NewTranspositionTable(size int) *TranspositionTable {
 }
 
 func (t *TranspositionTable) get(key uint64) int {
-	// check if key exists is not return 0
+	// check if columnKey exists is not return 0
 	if value, ok := t.table[key]; ok {
 		return value
 	} else {
@@ -78,7 +78,7 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 	// Since we cannot win with the next move, the best score is if we move with our second next move
 	// Which is the score from above + 1
 	max := (Width*Height - 1 - board.movesPlayed) / 2 // upper bound of our score as we cannot win immediately
-	if val := transpositionTable.get(board.hash()); val != 0 {
+	if val := transpositionTable.get(board.key()); val != 0 {
 		max = val + MinScore - 1
 	}
 	if beta > max {
@@ -108,6 +108,6 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 			}
 		}
 	}
-	transpositionTable.set(board.hash(), alpha-MinScore+1)
+	transpositionTable.set(board.key(), alpha-MinScore+1)
 	return alpha
 }
