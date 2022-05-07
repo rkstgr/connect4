@@ -80,8 +80,8 @@ func evaluateTestData(testData []TestBoardPosition, maxEvalTime time.Duration, t
 			t.Errorf("%d / %d: ❌ Evaluation of %s is %d, but should be %d",
 				i, len(testData), testPosition.positionString, evaluation, testPosition.evaluation)
 		} else {
-			//t.Logf("%d / %d: ✅ Evaluation of %s is %d (Time: %s, Positions: %d)",
-			//	i, len(testData), testPosition.positionString, evaluation, elapsedTime, positionCounters[i])
+			t.Logf("%d / %d: ✅ Evaluation of %s is %d (Time: %s, Positions: %d)",
+				i, len(testData), testPosition.positionString, evaluation, elapsedTime, positionCounters[i])
 		}
 	}
 	var totalPositions int

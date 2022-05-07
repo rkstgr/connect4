@@ -11,4 +11,5 @@
 - [x] Implement transposition table
 - [x] Implement iterative deepening with null window search
 - [x] Implement board with bit mapping
-- [ ] Implement better move ordering
+- [x] Anticipating losing moves
+- [ ] Better move ordering

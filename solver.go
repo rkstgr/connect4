@@ -57,19 +57,30 @@ func (t *TranspositionTable) set(key uint64, value int8) {
 var transpositionTable = NewTranspositionTable()
 
 func negamax(board Board, alpha, beta int, counter *Counter) int {
+	if alpha >= beta {
+		panic("Negamax alpha should be smaller beta")
+	}
+	if board.canWinNext() {
+		panic("Negamax should not be called on a board with a winning move")
+	}
 	counter.inc()
 
-	var i = 0
+	next := board.possibleNonLosingMoves()
+	if next == 0 {
+		// We have no non-losing moves; opponent wins next move
+		return -(Height*Width - board.movesPlayed) / 2
+	}
 
-	// Check if the game is drawn
-	if board.movesPlayed == Height*Width {
+	// Check for drawn game (we look two steps ahead)
+	if board.movesPlayed >= ((Height * Width) - 2) {
 		return 0
 	}
 
-	// Check if the current player has a winning move
-	for ; i < Width; i++ {
-		if board.canPlay(i) && board.isWinningMove(i) {
-			return (Width*Height + 1 - board.movesPlayed) / 2
+	min := -(Height*Width - 2 - board.movesPlayed) / 2
+	if alpha < min {
+		alpha = min
+		if alpha >= beta {
+			return alpha
 		}
 	}
 
@@ -88,13 +99,11 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 		}
 	}
 
-	var moves = [7]int{3, 2, 4, 1, 5, 0, 6}
-	i = 0
-	for ; i < 7; i++ {
-		move := moves[i]
-		if board.canPlay(move) {
+	var moveOrder = [Width]int{3, 2, 4, 1, 5, 0, 6}
+	for i := 0; i < Width; i++ {
+		if (next & board.columnMask(moveOrder[i])) > 0 {
 			nextBoard := board
-			nextBoard.play(move)
+			nextBoard.play(moveOrder[i])
 			score := -negamax(nextBoard, -beta, -alpha, counter)
 			if score >= beta {
 				// There is better path for the opponent; Prune
@@ -111,17 +120,21 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 }
 
 func solve(board Board, counter *Counter) int {
-	min := board.minScore()
-	max := board.maxScore()
+	if board.canWinNext() {
+		return (Height*Width + 1 - board.movesPlayed) / 2
+	}
+	min := -(Height*Width - board.movesPlayed) / 2
+	max := (Height*Width + 1 - board.movesPlayed) / 2
+
 	for min < max {
-		middle := min + (max-min)/2
-		if middle <= 0 && min/2 < middle {
-			middle = min / 2
-		} else if middle >= 0 && middle < max/2 {
-			middle = max / 2
+		med := min + (max-min)/2
+		if med <= 0 && min/2 < med {
+			med = min / 2
+		} else if med >= 0 && max/2 > med {
+			med = max / 2
 		}
-		r := negamax(board, middle, middle+1, counter)
-		if r <= middle {
+		r := negamax(board, med, med+1, counter) // use a null depth window to know if the actual score is greater or smaller than med
+		if r <= med {
 			max = r
 		} else {
 			min = r
