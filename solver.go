@@ -65,8 +65,8 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 	}
 	counter.inc()
 
-	next := board.possibleNonLosingMoves()
-	if next == 0 {
+	possibleNonLosingMoves := board.possibleNonLosingMoves()
+	if possibleNonLosingMoves == 0 {
 		// We have no non-losing moves; opponent wins next move
 		return -(Height*Width - board.movesPlayed) / 2
 	}
@@ -99,20 +99,26 @@ func negamax(board Board, alpha, beta int, counter *Counter) int {
 		}
 	}
 
-	var moveOrder = [Width]int{3, 2, 4, 1, 5, 0, 6}
+	moves := MoveSorter{}
+	var moveOrder = []int{3, 2, 4, 1, 5, 0, 6}
+
 	for i := 0; i < Width; i++ {
-		if (next & board.columnMask(moveOrder[i])) > 0 {
-			nextBoard := board
-			nextBoard.play(moveOrder[i])
-			score := -negamax(nextBoard, -beta, -alpha, counter)
-			if score >= beta {
-				// There is better path for the opponent; Prune
-				return score
-			}
-			// Update alpha if possible
-			if score > alpha {
-				alpha = score
-			}
+		if move := possibleNonLosingMoves & board.columnMask(moveOrder[i]); move > 0 {
+			moves.add(move, board.moveScore(move))
+		}
+	}
+
+	for next := moves.getNext(); next > 0; next = moves.getNext() {
+		nextBoard := board
+		nextBoard.play(next)
+		score := -negamax(nextBoard, -beta, -alpha, counter)
+		if score >= beta {
+			// There is better path for the opponent; Prune
+			return score
+		}
+		// Update alpha if possible
+		if score > alpha {
+			alpha = score
 		}
 	}
 	transpositionTable.set(board.key(), int8(alpha-MinScore+1))

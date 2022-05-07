@@ -55,10 +55,14 @@ func (board *Board) canPlay(col int) bool {
 	return (board.mask & board.topMask(col)) == 0
 }
 
-func (board *Board) play(col int) {
+func (board *Board) play(move uint64) {
 	board.position ^= board.mask // invert the stones
-	board.mask |= board.mask + board.bottomMask(col)
+	board.mask |= move
 	board.movesPlayed++
+}
+
+func (board *Board) playColumn(col int) {
+	board.play((board.mask + board.bottomMask(col)) & board.columnMask(col))
 }
 
 // Plays a sequence of given moves, mainly for setting up a position
@@ -69,11 +73,11 @@ func (board *Board) play(col int) {
 // - Will result to a won position
 func (board *Board) playMoves(movesString string) int {
 	for i, move := range movesString {
-		col := int(move - '1')
+		col := int(move-'0') - 1
 		if col < 0 || col > Width || !board.canPlay(col) || board.isWinningMove(col) {
 			return i
 		}
-		board.play(col)
+		board.playColumn(col)
 	}
 	return len(movesString)
 }
@@ -108,6 +112,18 @@ func (board *Board) possible() uint64 {
 
 func (board *Board) canWinNext() bool {
 	return (board.possible() & board.winningPosition()) != 0
+}
+
+func (board *Board) moveScore(move uint64) int {
+	return popCount(computeWinningPosition(board.position|move, board.mask))
+}
+
+func popCount(a uint64) int {
+	c := 0
+	for c = 0; a > 0; c++ {
+		a &= a - 1
+	}
+	return c
 }
 
 func (board *Board) possibleNonLosingMoves() uint64 {
@@ -196,6 +212,6 @@ func newBoard(movesString string) Board {
 }
 
 func main() {
-	board := newBoard("7422341735647741166133573473242566")
+	board := newBoard("233377345754465174223731671122611552")
 	board.render()
 }
