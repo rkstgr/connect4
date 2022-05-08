@@ -212,6 +212,8 @@ func newBoard(movesString string) Board {
 }
 
 func main() {
-	board := newBoard("233377345754465174223731671122611552")
-	board.render()
+	board := newBoard("271713432331713132")
+	counter := Counter{}
+	eval := solve(board, &counter)
+	print(eval)
 }
